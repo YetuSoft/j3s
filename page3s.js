@@ -5,7 +5,7 @@ Chart.defaults.plugins.tooltip.position = 'nearest';
 Chart.defaults.color = 'rgba(44, 56, 74, 0.95)';
 Chart.defaults.plugins.tooltip.external = external;
 
-const bdCach = "IgrejaPentecostalDeFeELibertacao";
+const bdCach = "default";
 const hostname = document.querySelector("html").getAttribute("hostname"),
     touch = function () {
         return (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(navigator.userAgent) || /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(navigator.userAgent)) ? true : false;
