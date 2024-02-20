@@ -5,8 +5,15 @@ Chart.defaults.plugins.tooltip.position = 'nearest';
 Chart.defaults.color = 'rgba(44, 56, 74, 0.95)';
 Chart.defaults.plugins.tooltip.external = external;
 
-const bdCach = "default";
-const hostname = document.querySelector("html").getAttribute("hostname"),
+/** 
+ * modal3spage função para identificar sé exist modal para aplicativo mobile
+ * modal3spage
+*/
+
+/** nome da base de dados local */
+const bdCach = "default",
+    blockConnectPage = { connected: false },
+    hostname = document.querySelector("html").getAttribute("hostname"),
     touch = function () {
         return (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(navigator.userAgent) || /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(navigator.userAgent)) ? true : false;
     },
@@ -16,6 +23,15 @@ const hostname = document.querySelector("html").getAttribute("hostname"),
             source.push({ year: [year - r, ""].join("") });
         }
         return source;
+    },
+    addHistory = function (name) {
+        var url = [hostname, name].join("");
+        history.pushState({
+            url: url
+        },
+            name,
+            url
+        );
     },
     realNumber = {
         set: function (number) {
@@ -288,6 +304,11 @@ const hostname = document.querySelector("html").getAttribute("hostname"),
         }
     },
     progressPage = function (load) {
+
+        // depricat localStorage.stopConnections
+        if (true === blockConnectPage.connected)
+            return $("#open-load").addClass("focusprogres");
+
         if (load == true) {
             window.progressInstance = true;
             delayPage(function () {
@@ -319,6 +340,15 @@ const hostname = document.querySelector("html").getAttribute("hostname"),
     },
     get_file_puts = function (origin, type) {
         progressPage(true);
+
+        if (typeof modal3spage == "function") {
+            modal3spage();
+        }
+
+        if (document.body.connectServer)
+            return true;
+        document.body.connectServer = true;
+
         post('controller/aplication.php', { u: origin.split("#")[0], uid: (origin.split("#")[1] || (document.location.href.split("#")[1] || "0")) }).then(response => {
             $(".load-pages").html(response.page.file_contents).promise().done(function () {
                 mapUri($(".load-pages").get(0));
@@ -350,6 +380,8 @@ const hostname = document.querySelector("html").getAttribute("hostname"),
 
                 progressPage(false);
             });
+
+            document.body.connectServer = false;
         });
     },
     delayPage = (function () {
@@ -400,15 +432,11 @@ async function post(url = '', data = {}) {
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(hostname + 'wspage.js', { scope: hostname })
         .then(function (registration) {
+            console.log(registration);
             // sucess :)
         }, function (err) {
             // registration failed :(
         });
-}
-
-function focusMenusLoad(index) {
-    $(".menu-page li").removeClass("focus");
-    $(".menu-page li:eq(" + index + ")").addClass("focus");
 }
 
 
@@ -475,6 +503,7 @@ function logaut() {
                             input.get(0).nofilter = true;
                             input.focus();
                             if (typeof arg.select == "function") {
+                                input.get(0).clickObjets = true;
                                 arg.select.call(input.get(0), this.dataItem);
                             }
                             parent.find(".template-outocomplite").remove();
@@ -532,6 +561,11 @@ function logaut() {
                                     element.value = r[i][arg.dataValueField];
                                     t.value = r[i][arg.dataTextField];
                                     if (typeof arg.select == "function") {
+                                        if (t.clickObjets) {
+                                            return (() => {
+                                                delete t.clickObjets;
+                                            })();
+                                        }
                                         arg.select.call(t, r[i]);
                                     }
                                     break;
@@ -836,6 +870,147 @@ function logaut() {
         });
     };
 
+    $.fn.textGroup = function (arg = {}) {
+        /**
+         * argumentos
+         * arg.data
+         * arg.dataValueField
+         * arg.dataTextField
+         * arg.validate
+         * arg.transport
+         * arg.transport.url
+         * arg.transport.acess
+         * arg.dataSource
+         */
+
+        arg.validate = (typeof arg.validate == "function" ?
+            arg.validate :
+            function () { return true; }
+        );
+
+        return this.each(function () {
+            var t = this,
+                parent = $(t.parentElement),
+                bod = $("<div />", { class: "container-group-text" });
+
+            if (t.implementTemplte) return false;
+
+            t.implementTemplte = true;
+            t.type = "hidden";
+
+            bod.attr("title", "click para adicionar ou remover um crente, nesta actividade");
+
+            bod.on("click", function () {
+                popupPage({
+                    html: [
+                        '<div class="top-popup"><span>Todos os associados a atividade</span></div>',
+                        '<div class="popup-input"><label>Nome Completo do Crente</label><div><input type="text" id="nome" name="nome" /></div></div>',
+                        '<div class="popup-input addfiles"></div>',
+                        '<div class="popup-input footer"><button id="cncel">Canscelar</button><button class="bt-primary" id="ok">Ok</button></div>'
+                    ].join(""),
+                    done: function (e) {
+                        var popup = e.element,
+                            painel = popup.find(".addfiles"),
+                            daaSource = $(t).data("textGroup").dataSource.data(),
+                            addLabel = function (label, e, it) {
+                                label.get(0).dataItem = e;
+                                label.html([
+                                    '<span>', e[arg.dataTextField], '</span>',
+                                    '<button class="options-button"><div class="div-icon" style="width: 20px;height:20px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#5F6368" style="pointer-events: none; display: block; width: 100%; height: 100%;"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"></path></svg></div></button>'
+                                ].join(""));
+
+                                label.find("button").on("click", function () {
+                                    it.dataSourceFilterGourp = it.dataSourceFilterGourp.filter(function (x) { return x[arg.dataTextField] !== label.get(0).dataItem[arg.dataTextField] });
+                                    label.remove();
+                                });
+                            };
+
+                        popup.find("#cncel").on("click", function () {
+                            popup.remove();
+                        });
+
+                        popup.find("button#ok").on("click", function () {
+                            var it = popup.find("[type=text]").get(0);
+                            $(t).data("textGroup").dataSource.data(it.dataSourceFilterGourp);
+                            bod.html("").promise().done(function () {
+                                it.dataSourceFilterGourp.find(x => {
+                                    var divname = $("<div />");
+                                    divname.html('<span>' + x[arg.dataTextField] + '</span>');
+                                    bod.append(divname);
+                                });
+                                popup.remove();
+                            });
+                        });
+
+                        popup.find("#nome").autoCDropage({
+                            url: arg.transport.url,
+                            name: arg.transport.acess,
+                            dataTextField: "nome",
+                            dataValueField: "id",
+                            select: function (e) {
+                                var it = this;
+                                it.value = "";
+                                if (!it.dataSourceFilterGourp) {
+                                    it.dataSourceFilterGourp = new Array();
+                                }
+
+                                if (arg.validate({ data: it.dataSourceFilterGourp, total: (it.dataSourceFilterGourp.length + 1) })) {
+                                    if (!it.dataSourceFilterGourp.find(a => a[arg.dataTextField] == e[arg.dataTextField])) {
+                                        it.dataSourceFilterGourp.push(e);
+                                        var label = $("<label />");
+                                        addLabel(label, e, it);
+                                        painel.append(label);
+                                    }
+                                }
+                            }
+                        });
+
+                        /** pintar popup */
+                        var it = popup.find("[type=text]").get(0);
+                        it.dataSourceFilterGourp = daaSource;
+                        daaSource.find(function (e) {
+                            if (daaSource.length > 0) {
+                                var label = $("<label />");
+                                addLabel(label, e, it);
+                                painel.append(label);
+                            }
+                        });
+
+                    }
+                });
+            });
+
+            $(t.parentElement).append(bod);
+            parent.addClass("container-parents-group-text");
+
+            $(t).data("textGroup", {
+                dataSource: {
+                    data: function (e) {
+                        if (e) {
+                            this._data = e;
+                            t.value = JSON.stringify(e);
+                            bod.html("");
+                            this._data.find(function (x) {
+                                var divname = $("<div />");
+                                divname.html('<span>' + x[arg.dataTextField] + '</span>');
+                                bod.append(divname);
+                            });
+                        }
+                        return this._data;
+                    },
+                    _data: new Array()
+                }
+            });
+
+            if (arg.dataSource) {
+                $(t).data("textGroup").dataSource.data(arg.dataSource);
+            }
+
+            return $(t).data("textGroup");
+
+        });
+    };
+
     $.fn.t3sNumeric = function (arg) {
         /**
          * argumentos
@@ -880,6 +1055,47 @@ function logaut() {
                 jt.select();
             });
         });
+    };
+
+    $.fn.title3s = function (arg) {
+        /**
+        * argumentos
+        * arg.align
+        * property css style
+        * .title3s
+        */
+        var arg = arg || {};
+        return this.each(function () {
+            var t = this, $this = $(t);
+            if (!t.title3s) {
+                t.title3s = true;
+
+                if (!touch()) {
+                    $this.on("mouseenter", function (e) {
+                        var title3s = $("<div />", { class: "title3s", "data-role": "title3s" });
+                        if (!$(".title3s").get(0))
+                            $("body").append(title3s);
+
+                        title3s = $(".title3s");
+                        title3s.stop(true);
+
+                        if (arg.align == "left")
+                            title3s.css({
+                                top: [(($this.offset().top + ($this.height() / 2)) - 10), "px"].join(""),
+                                left: [($this.offset().left + $this.width() + 10), "px"].join("")
+                            });
+
+                        title3s.html("<span>" + $this.attr("title3s") + "</span>");
+                        $(".title3s").fadeIn(5);
+
+                    }).mouseleave(function () {
+                        $(".title3s").fadeOut(6e2);
+                    });
+                }
+                $this.data("title3s", {});
+            }
+        });
+
     };
 })($);
 
