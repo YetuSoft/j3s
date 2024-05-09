@@ -14,6 +14,7 @@ Chart.defaults.plugins.tooltip.external = external;
 const bdCach = "default",
     blockConnectPage = { connected: false },
     hostname = document.querySelector("html").getAttribute("hostname"),
+    version = document.querySelector("html").getAttribute("version"),
     touch = function () {
         return (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(navigator.userAgent) || /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(navigator.userAgent)) ? true : false;
     },
@@ -314,9 +315,16 @@ const bdCach = "default",
             delayPage(function () {
                 if (window.progressInstance) {
                     $("#open-load").addClass("focusprogres");
+                    setTimeout(function () {
+                        if (window.progressInstance) {
+                            $("#logouconnect").remove();
+                            $(".text-load").append('<button id="logouconnect" onclick="logaut()">Recarregar Pagina</button>');
+                        }
+                    }, 10e3);
                 }
-            }, 15e2);
+            }, 4e2);
         } else {
+            $(".text-load").find("button").remove();
             $("#open-load").removeClass("focusprogres");
             delete window.progressInstance;
         }
@@ -340,6 +348,7 @@ const bdCach = "default",
     },
     get_file_puts = function (origin, type) {
         progressPage(true);
+        $(".load-pages").html("");
 
         if (typeof modal3spage == "function") {
             modal3spage();
@@ -350,6 +359,17 @@ const bdCach = "default",
         document.body.connectServer = true;
 
         post('controller/aplication.php', { u: origin.split("#")[0], uid: (origin.split("#")[1] || (document.location.href.split("#")[1] || "0")) }).then(response => {
+            /** mudar {{host}} paea o nome do Servido... */
+            if (response.page.file_contents.includes("{{host}}")) {
+                response.page.file_contents = response.page.file_contents.replace("{{host}}", hostname);
+            }
+
+            /** blobal variavel */
+            if (response.page.file_contents.includes("{{version}}")) {
+                response.page.file_contents = response.page.file_contents.replace("{{version}}", version);
+            }
+
+
             $(".load-pages").html(response.page.file_contents).promise().done(function () {
                 mapUri($(".load-pages").get(0));
                 var page = $(".load-pages").find("page"),
@@ -468,7 +488,7 @@ function logaut() {
         return this.each(function () {
             var element = this,
                 input = $("<input />", { type: "text" }),
-                removeIcon = $("<span />", { class: "fa fa-times remove-dropOut" }),
+                removeIcon = $("<span />", { class: "remove-dropOut" }).html('<span class="icon icon-close"></span>'),
                 parent = $(element.parentElement),
 
                 appendHtml = (data) => {
@@ -545,6 +565,8 @@ function logaut() {
             removeIcon.on("click", function () {
                 element.value = "";
                 input.val("");
+
+                arg.select.call(input.get(0), {});
             });
 
             input.on("focusout", function () {

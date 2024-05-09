@@ -447,6 +447,13 @@
 
             });
             /** created columns header [end]*/
+
+
+            // set dataSource exists
+            if ((options || {}).dataSource)
+                tJQ.data("g3s").dataSource.data(options.dataSource);
+
+
         });
     };
 
