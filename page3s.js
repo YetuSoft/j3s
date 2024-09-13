@@ -394,7 +394,7 @@ const bdCach = "default",
                 }
 
                 if (script) {
-                    var createFunctions = eval(script);
+                    var createFunctions = (self || window)[script];
                     return typeof createFunctions == "function" ? createFunctions(response) : progressPage(false);
                 }
 
@@ -563,10 +563,13 @@ function logaut() {
             }
 
             removeIcon.on("click", function () {
-                element.value = "";
-                input.val("");
-
-                arg.select.call(input.get(0), {});
+                if (!element.getAttribute("readonly")) {
+                    element.value = "";
+                    input.val("");
+                    if (typeof arg.select == "function") {
+                        return arg.select.call(input.get(0), {});
+                    }
+                }
             });
 
             input.on("focusout", function () {
@@ -801,10 +804,17 @@ function logaut() {
                     _data: arg.dataSource || new Array()
                 },
                 value: function (data) {
+
+                    // permitir adicionar um array de Objectos
+                    if (data.length && (typeof data !== "string")) {
+                        data = data[0] ? data[0] : {};
+                    }
+
                     $(element).val(!data ? data : data[arg.dataValueField]);
                     $(input).val(!data ? data : data[arg.dataTextField]);
-                    if (typeof this.options.select == "function" && data)
+                    if (typeof this.options.select == "function" && data) {
                         this.options.select.call(input.get(0), data);
+                    }
                 },
                 select: function () {
                     $(input).select();
